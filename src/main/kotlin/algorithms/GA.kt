@@ -72,7 +72,7 @@ class GA(
                     }
 
                     // PMX crossover
-                    val (c1, c2) = pmx(p1, p2, problem.dimension(), guard, offspring.size)
+                    val (c1, c2) = pmx(p1, p2)
                     offspring.add(c1)
                     if (offspring.size < popSize) offspring.add(c2)
 
@@ -164,9 +164,6 @@ class GA(
     private fun pmx(
         p1: TSP.Tour,
         p2: TSP.Tour,
-        dimension: Int,
-        gen: Int,
-        offspringSize: Int
     ): Pair<TSP.Tour, TSP.Tour> {
 
         val a = p1.order
@@ -179,30 +176,37 @@ class GA(
         var cut1 = MultithreadedRandomUtils.nextInt(n)
         var cut2 = MultithreadedRandomUtils.nextInt(n)
         if (cut1 > cut2) cut1 = cut2.also { cut2 = cut1 }
-        if (cut1 == cut2) cut2 = (cut1 + 1) % n
+        if (cut1 == cut2) cut2 = (cut1 + 1).coerceAtMost(n - 1)
 
-        // Copy middle segment
+        // mapping between swapped segments
+        val map12 = HashMap<Int, Int>((cut2 - cut1 + 1) * 2)
+        val map21 = HashMap<Int, Int>((cut2 - cut1 + 1) * 2)
+
+        // Copy segment + build mapping
         for (i in cut1..cut2) {
-            c1[i] = a[i]
-            c2[i] = b[i]
+            val x = a[i]
+            val y = b[i]
+            c1[i] = x
+            c2[i] = y
+            map12[y] = x
+            map21[x] = y
         }
 
-        fun fill(child: IntArray, pFrom: IntArray, pOther: IntArray) {
-            for (i in 0 until n) {
-                if (child[i] != -1) continue
-
-                var gene = pFrom[i]
-                while (child.contains(gene)) {
-                    val idx = pFrom.indexOf(gene)
-                    gene = pOther[idx]
-                }
-                child[i] = gene
+        fun resolve(map: HashMap<Int, Int>, v0: Int): Int {
+            var v = v0
+            while (true) {
+                val next = map[v] ?: return v
+                v = next
             }
         }
 
-        fill(c1, b, a)
-        fill(c2, a, b)
+        // Fill remaining positions
+        for (i in 0 until n) {
+            if (c1[i] == -1) c1[i] = resolve(map21, b[i])
+            if (c2[i] == -1) c2[i] = resolve(map12, a[i])
+        }
 
         return TSP.Tour(c1) to TSP.Tour(c2)
     }
+
 }
