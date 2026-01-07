@@ -26,6 +26,10 @@ object MultithreadedRandomUtils {
         return r
     }
 
+    fun initForWorker(workerIndex: Int) {
+        val s = masterSeed xor (workerIndex.toLong() shl 32)
+        localRng.set(Random(s))
+    }
     fun nextInt(bound: Int): Int = rng().nextInt(bound)
 
     fun nextDouble(): Double = rng().nextDouble()

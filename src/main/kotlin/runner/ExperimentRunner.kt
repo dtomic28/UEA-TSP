@@ -58,8 +58,10 @@ object ExperimentRunner {
             val data = parser.parse(inputPath)
             val maxFes = 1000 * data.dimension
 
-            val tasks = (0 until repeats).map {
+            val tasks = (0 until repeats).map { runIndex ->
                 Callable {
+                    MultithreadedRandomUtils.initForWorker(runIndex)
+
                     val tsp = TSP(data, maxFes)
                     val ga = GA(popSize, cr, pm)
                     ga.execute(tsp).distance.toFloat()
